@@ -27,14 +27,17 @@ export default async function handler(req: any, res: any) {
       // Configure system instruction based on search focus lenses
       let targetSystemInstruction = 
         "You are an expert research and discovery assistant like PointAI. " +
-        "Provide thorough, high-quality, precise, and objectively written answers based on latest information. " +
-        "Always use clean markdown formatting (bold headers, bullet points, structured lists, and markdown tables if relevant). " +
-        "At the end of your response, add a very short summary sentence or insight.";
+        "You MUST provide 100% accurate, complete, highly reliable answers written with a professional, engaging human touch. " +
+        "CRITICAL RULES:\n" +
+        "1. NO AI CLICHÉS OR FILLER TEXT: Completely avoid robotic introductions or transitions like 'Certainly! I can help...', 'Here is the summary...', or 'Based on the context retrieved...'. Start directly with the answer.\n" +
+        "2. PRISTINE LAYOUT: Use beautiful, elegant, and standard markdown (bold titles, clean bullet points, bullet list spacing, or comparative markdown tables where helpful). Keep paragraphs short and highly readable.\n" +
+        "3. NO FAULTY OR LOOSE TEXT: Make sure every sentence is highly objective, factual, concise, and carries a high-quality human editorial touch.\n" +
+        "4. For long lists or facts, structure them beautifully. At the end of your response, add a very short, elegant summary sentence or key insight.";
 
       if (focus === "academic") {
-        targetSystemInstruction += " Adopt an authoritative, scientific, and peer-reviewed style. List logical sections or arguments. Prioritize formal references in your output text.";
+        targetSystemInstruction += " Adopt an authoritative, scientific, and peer-reviewed style. List logical, well-structured sections. Prioritize formal academic citations and references in your output text.";
       } else if (focus === "writing") {
-        targetSystemInstruction += " Focus purely on tone, grammar editing, creative composition, and styling. Ignore web grounding constraints and deliver beautiful, flowy prose, copy, or code.";
+        targetSystemInstruction += " Focus purely on pristine tone, grammar editing, descriptive composition, and premium styling. Ignore web grounding constraints and deliver beautiful, engaging copy, prose, or code.";
       }
 
       // Map chat history for OpenAI-compatible client
@@ -96,7 +99,7 @@ export default async function handler(req: any, res: any) {
 
       let formattedAnswer = text;
       if (reasoning) {
-        formattedAnswer = `> 🧠 **Thinking Process:**\n> \n> ${reasoning.split('\n').join('\n> ')}\n\n${text}`;
+        formattedAnswer = `<details class="gemma-thinking-container group border border-slate-200/50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 rounded-xl p-3.5 mb-5 cursor-pointer select-none transition-all hover:bg-slate-50 dark:hover:bg-slate-900/20 font-sans text-xs">\n<summary class="flex items-center justify-between text-slate-500 font-semibold text-xs list-none cursor-pointer">\n  <span class="flex items-center gap-2">\n    <span>🧠 Deep Thinking & Analysis Process</span>\n  </span>\n  <span class="text-[10px] text-slate-400">▼</span>\n</summary>\n<div class="mt-3 py-3 border-t border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 leading-relaxed max-h-[220px] overflow-y-auto custom-scrollbar font-mono text-[11px] whitespace-pre-wrap">\n${reasoning.trim()}\n</div>\n</details>\n\n${text}`;
       }
 
       // Generate 3 contextual follow-up questions
@@ -133,15 +136,17 @@ export default async function handler(req: any, res: any) {
     // Configure prompt instructions based on search focus lenses
     let systemInstruction = 
       "You are an expert research and discovery assistant like PointAI. " +
-      "Provide thorough, high-quality, precise, and objectively written answers based on latest information. " +
-      "Always use clean markdown formatting (bold headers, bullet points, structured lists, and markdown tables if relevant). " +
-      "Avoid meta-references like 'Based on the search results'. Just formulate a beautiful response directly. " +
-      "At the end of your response, add a very short summary sentence or insight.";
+      "You MUST provide 100% accurate, complete, highly reliable answers written with a professional, engaging human touch. " +
+      "CRITICAL RULES:\n" +
+      "1. NO AI CLICHÉS OR FILLER TEXT: Completely avoid robotic introductions or transitions like 'Certainly! I can help...', 'Here is the summary...', or 'Based on the context retrieved...'. Start directly with the answer.\n" +
+      "2. PRISTINE LAYOUT: Use beautiful, elegant, and standard markdown (bold titles, clean bullet points, bullet list spacing, or comparative markdown tables where helpful). Keep paragraphs short and highly readable.\n" +
+      "3. NO FAULTY OR LOOSE TEXT: Make sure every sentence is highly objective, factual, concise, and carries a high-quality human editorial touch.\n" +
+      "4. For long lists or facts, structure them beautifully. At the end of your response, add a very short, elegant summary sentence or key insight.";
 
     if (focus === "academic") {
-      systemInstruction += " Adopt an authoritative, scientific, and peer-reviewed style. List logical sections or arguments. Prioritize formal references in your output text.";
+      systemInstruction += " Adopt an authoritative, scientific, and peer-reviewed style. List logical, well-structured sections. Prioritize formal academic citations and references in your output text.";
     } else if (focus === "writing") {
-      systemInstruction += " Focus purely on tone, grammar editing, creative composition, and styling. Ignore web grounding constraints and deliver beautiful, flowy prose, copy, or code.";
+      systemInstruction += " Focus purely on pristine tone, grammar editing, descriptive composition, and premium styling. Ignore web grounding constraints and deliver beautiful, engaging copy, prose, or code.";
     }
 
     // Build context including chat history for conversational follow-ups

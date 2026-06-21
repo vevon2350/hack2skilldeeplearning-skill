@@ -183,6 +183,97 @@ const renderModelBadge = (modelName?: string) => {
   }
 };
 
+const CodeBlock = ({ language, code }: { language: string; code: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <pre className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 text-slate-100 my-4 text-xs font-mono shadow-md">
+      <div className="flex items-center justify-between px-4 py-2 bg-slate-900/90 border-b border-slate-800/80">
+        <span className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider font-sans">{language || "code"}</span>
+        <button
+          onClick={handleCopy}
+          className="p-1 px-1.5 hover:bg-slate-800/80 text-slate-400 hover:text-white rounded transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3 h-3 text-emerald-400" />
+              <span className="text-[10px] text-emerald-400 font-sans">Copied!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-3 h-3 text-slate-400" />
+              <span className="text-[10px] font-sans">Copy</span>
+            </>
+          )}
+        </button>
+      </div>
+      <div className="p-4 overflow-x-auto custom-scrollbar select-text leading-relaxed">
+        <code className="text-slate-200">{code}</code>
+      </div>
+    </pre>
+  );
+};
+
+const parseMessageContent = (content: string) => {
+  // Matches details tag and extracts the content inside and the summary
+  const detailsRegex = /<details[\s\S]*?<summary[\s\S]*?>([\s\S]*?)<\/summary>([\s\S]*?)<\/div>\s*<\/details>/i;
+  const match = content.match(detailsRegex);
+
+  if (match) {
+    const summaryText = match[1].replace(/<[^>]*>/g, "").trim(); 
+    // Strip the wrapping styling tags to keep the inner text clean
+    const thinkingText = match[2].replace(/<div[^>]*>/i, "").replace(/<\/div>/i, "").trim();
+    const cleanContent = content.replace(detailsRegex, "").trim();
+    return {
+      hasThinking: true,
+      summaryText: summaryText || "Deep Thinking Process",
+      thinkingText,
+      cleanContent
+    };
+  }
+
+  // Also check if there's any raw markdown blockquote/thinking formats
+  if (content.startsWith("> 🧠 **Thinking")) {
+    const lines = content.split('\n');
+    const thinkingLines: string[] = [];
+    const contentLines: string[] = [];
+    let isThinking = true;
+
+    for (const line of lines) {
+      if (isThinking) {
+        if (line.startsWith(">") || line.trim() === "") {
+          thinkingLines.push(line.replace(/^>\s*🧠?/i, "").trim());
+        } else {
+          isThinking = false;
+          contentLines.push(line);
+        }
+      } else {
+        contentLines.push(line);
+      }
+    }
+
+    return {
+      hasThinking: true,
+      summaryText: "Deep Thinking Process",
+      thinkingText: thinkingLines.join('\n').trim(),
+      cleanContent: contentLines.join('\n').trim()
+    };
+  }
+
+  return {
+    hasThinking: false,
+    summaryText: "",
+    thinkingText: "",
+    cleanContent: content
+  };
+};
+
 export default function ThreadView({
   thread,
   onNavigateBack,
@@ -251,6 +342,7 @@ export default function ThreadView({
       <div className="flex flex-col gap-8">
         {thread.messages.map((message, idx) => {
           const isUser = message.role === "user";
+          const parsed = parseMessageContent(message.content);
 
           if (isUser) {
             return (
@@ -360,7 +452,7 @@ export default function ThreadView({
                   {/* Quick Action toolbar */}
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => copyAnswerToClipboard(message.content, message.id)}
+                      onClick={() => copyAnswerToClipboard(parsed.cleanContent, message.id)}
                       className="p-1 text-[#444748] hover:bg-slate-50 hover:text-black rounded transition-all flex items-center gap-1 text-[10px] cursor-pointer"
                       title="Copy response markdown"
                     >
@@ -379,9 +471,52 @@ export default function ThreadView({
                   </div>
                 </div>
 
+                {parsed.hasThinking && (
+                  <details className="group border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl p-3.5 mb-4 select-none transition-all hover:bg-slate-100/40 dark:hover:bg-slate-900/50">
+                    <summary className="flex items-center justify-between text-slate-500 font-semibold text-xs list-none cursor-pointer">
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
+                        <span>{parsed.summaryText}</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 group-open:rotate-180 transition-transform duration-200">▼</span>
+                    </summary>
+                    <div className="mt-3.5 pt-3.5 border-t border-slate-200/60 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-mono text-[11px] leading-relaxed max-h-[220px] overflow-y-auto custom-scrollbar whitespace-pre-wrap select-text">
+                      {parsed.thinkingText}
+                    </div>
+                  </details>
+                )}
+
                 {/* Markdown Container */}
-                <div className="markdown-body text-slate-800 text-[14px] leading-relaxed max-w-none pr-1">
-                  <Markdown>{message.content}</Markdown>
+                <div className="markdown-body text-[14.5px] leading-relaxed max-w-none pr-1">
+                  <Markdown
+                    components={{
+                      code({ className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || "");
+                        const isInline = !match && !String(children).includes("\n");
+                        const codeString = String(children).replace(/\n$/, "");
+                        
+                        if (isInline) {
+                          return (
+                            <code 
+                              className="bg-slate-100/80 border border-slate-205 dark:bg-slate-850 dark:border-slate-800 text-rose-600 dark:text-rose-400 px-1.2 py-0.4 rounded text-[12.5px] font-mono font-semibold" 
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          );
+                        }
+                        
+                        return (
+                          <CodeBlock 
+                            language={match ? match[1] : ""} 
+                            code={codeString} 
+                          />
+                        );
+                      }
+                    }}
+                  >
+                    {parsed.cleanContent}
+                  </Markdown>
                 </div>
               </div>
 
