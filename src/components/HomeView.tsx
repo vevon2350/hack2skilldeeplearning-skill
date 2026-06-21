@@ -154,6 +154,21 @@ export default function HomeView({
   const [placeholderText, setPlaceholderText] = useState("Ask anything...");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // States for link/page open welcome modal and 2-second upward arrow animation
+  const [isWelcomePopOpen, setIsWelcomePopOpen] = useState(false);
+  const [shouldAnimateArrow, setShouldAnimateArrow] = useState(false);
+
+  useEffect(() => {
+    // Show welcoming popup modal on mount
+    setIsWelcomePopOpen(true);
+    // Move brand mascot arrow upside for exactly 2 seconds
+    setShouldAnimateArrow(true);
+    const timer = setTimeout(() => {
+      setShouldAnimateArrow(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Auto-resize the search text area
   useEffect(() => {
     if (textareaRef.current) {
@@ -250,7 +265,13 @@ export default function HomeView({
 
         {/* Brand Mascot Markup */}
         <div className="mb-8 select-none flex items-center justify-center gap-3">
-          <svg viewBox="0 0 100 100" className="w-12 h-12 fill-current text-primary animate-fade-in shrink-0" xmlns="http://www.w3.org/2000/svg">
+          <svg 
+            viewBox="0 0 100 100" 
+            className={`w-12 h-12 fill-current text-primary shrink-0 transition-transform duration-[2000ms] ease-out ${
+              shouldAnimateArrow ? "-translate-y-16 scale-110 drop-shadow-[0_10px_15px_rgba(59,130,246,0.3)]" : "translate-y-0 scale-100"
+            }`} 
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <path d="M 50 8 L 81 85 L 50 74 L 19 85 Z" />
           </svg>
           <h1 id="root_brand_title" className="text-5xl md:text-6xl font-sans tracking-tight font-light text-primary text-center">
@@ -534,8 +555,51 @@ export default function HomeView({
         </div>
       </div>
 
+      {/* Modern custom welcome popup modal on link open with secondary 2s arrow move */}
+      {isWelcomePopOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in animate-duration-300">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-sm w-full rounded-2xl p-6 shadow-2xl relative text-center flex flex-col items-center">
+            
+            {/* Elegant visual indicator containing an upwards animating arrow */}
+            <div className={`mb-5 flex items-center justify-center h-16 w-16 bg-blue-50 dark:bg-blue-950/40 rounded-full border border-blue-100 dark:border-blue-900/50 transition-all duration-[2000ms] ${
+              shouldAnimateArrow ? "-translate-y-4 scale-110 shadow-lg" : "translate-y-0 scale-100"
+            }`}>
+              <svg 
+                viewBox="0 0 100 100" 
+                className={`w-8 h-8 fill-current text-blue-600 transition-all duration-[2000ms] ${
+                  shouldAnimateArrow ? "animate-pulse" : ""
+                }`} 
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M 50 8 L 81 85 L 50 74 L 19 85 Z" />
+              </svg>
+            </div>
 
+            <h2 className="text-2xl font-sans font-semibold tracking-tight text-slate-900 dark:text-white mb-2">
+              Welcome to PointAI
+            </h2>
+            
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+              Experience deep search, direct citation search, and model switching capabilities. Your AI assistant sandbox is fully loaded.
+            </p>
 
+            <button
+              onClick={() => {
+                setIsWelcomePopOpen(false);
+                // Trigger transition animation again so they can appreciate its physical movement
+                setShouldAnimateArrow(true);
+                setTimeout(() => {
+                  setShouldAnimateArrow(false);
+                }, 2000);
+              }}
+              className="w-full bg-slate-900 hover:bg-black dark:bg-white dark:hover:bg-slate-100 dark:text-black text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              Get Started
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
